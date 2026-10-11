@@ -54,7 +54,8 @@ Animation steht oben mittig auf der Seekarte (unter den Anzeigen, neben dem Komp
 (z.B. `−30 min 15:40`, `jetzt 16:10`, `+30 min 16:40 Vorhersage` – Vorhersagen orange).
 
 * DWD: Vergangenheit aus `dwd:Niederschlagsradar`, Vorhersage (bis 120 min) aus `dwd:Radar_wn-product_1x1km_ger`.
-* KNMI und RainViewer: nur Vergangenheit.
+* KNMI: Vergangenheit aus `precipitation`, Vorhersage (bis 120 min) aus dem Dataset `radar_forecast`, Layer `precipitationfc`.
+* RainViewer: nur Vergangenheit.
 
 Die Radarbilder werden im Hintergrund nachgeladen, ohne die Seekarte neu aufzubauen.
 

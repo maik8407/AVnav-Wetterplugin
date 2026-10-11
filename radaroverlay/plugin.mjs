@@ -523,6 +523,8 @@ const createWmsSource = (defaultLayer) => ({
         }
         context.base = base;
         context.forecastLayer = options.forecastlayer;
+        //KNMI: the forecast is in a separate dataset
+        context.forecastDataset = options.forecastdataset;
         //only request tiles that intersect the bounding box (in EPSG:3857 meters)
         const bbox = options.boundingbox;
         context.limits = bbox ? {
@@ -559,7 +561,10 @@ const createWmsSource = (defaultLayer) => ({
         }
         if (context.forecastLayer) {
             for (let t = now + WMS_STEP; t <= now + settings.forecast * 60000; t += WMS_STEP) {
-                rt.push({time: t, forecast: true, layer: context.forecastLayer, key: "f" + t});
+                rt.push({
+                    time: t, forecast: true, layer: context.forecastLayer,
+                    dataset: context.forecastDataset, key: "f" + t
+                });
             }
         }
         return rt;
@@ -574,6 +579,7 @@ const createWmsSource = (defaultLayer) => ({
         }
         url.searchParams.set("TIME", new Date(frame.time).toISOString().replace(/\.\d+Z$/, "Z"));
         if (frame.layer) url.searchParams.set("LAYERS", frame.layer);
+        if (frame.dataset) url.searchParams.set("DATASET", frame.dataset);
         return url.toString();
     },
     loader: (context) => createLoader(context.minInterval, context.apiKey, context.fallback)
