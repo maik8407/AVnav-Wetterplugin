@@ -26,7 +26,8 @@ und hat ein Stundenkontingent, das sich alle anonymen Nutzer teilen.
 Mit einem kostenlosen eigenen Key (Registrierung im
 [KNMI Developer Portal](https://developer.dataplatform.knmi.nl/apis/), "Request API Key"
 für die WMS API) geht es schneller und zuverlässiger. Der Key wird im Radar-Dialog
-(Button "Radar" auf der Navigationsseite) eingetragen.
+(Button "Radar" auf der Navigationsseite) eingetragen. Benötigt wird der Key für die **WMS API**.
+Lehnt der Browser die Anfragen mit Key ab, nutzt das Plugin automatisch wieder den anonymen Zugang.
 
 ## Installation
 

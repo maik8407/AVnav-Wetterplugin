@@ -132,9 +132,16 @@ const createRequestQueue = (minInterval) => {
  * @param apiKey if set: load with fetch and send it as Authorization header
  * @returns {function(url,priority):Promise<HTMLImageElement>} rejects on errors
  */
-const createLoader = (minInterval, apiKey) => {
+/*
+ * fallback (optional): {host, minInterval} - used if requests with the api key
+ * fail in the browser (e.g. the server does not answer the CORS preflight that
+ * is needed for the Authorization header). Then the anonymous host is used.
+ */
+const createLoader = (minInterval, apiKey, fallback) => {
     const queue = createRequestQueue(minInterval);
     const cache = new Map();
+    let fallbackQueue;
+    let keyFailed = false;
     const loadImage = (src) => new Promise((resolve, reject) => {
         //no crossOrigin: like AvNav itself, as not all servers send CORS headers (KNMI)
         const image = new Image();
@@ -142,9 +149,25 @@ const createLoader = (minInterval, apiKey) => {
         image.addEventListener('error', () => reject(new Error("unable to load " + src)), {once: true});
         image.src = src;
     });
+    const loadAnonymous = (url, priority) => {
+        if (!fallbackQueue) fallbackQueue = createRequestQueue(fallback.minInterval);
+        const anonymous = new URL(url);
+        anonymous.hostname = fallback.host;
+        return fallbackQueue(() => loadImage(anonymous.toString()), priority);
+    }
     const load = async (url, priority) => {
         if (!apiKey) return queue(() => loadImage(url), priority);
-        const response = await queue(() => fetch(url, {headers: {Authorization: apiKey}}), priority);
+        if (keyFailed) return loadAnonymous(url, priority);
+        let response;
+        try {
+            response = await queue(() => fetch(url, {headers: {Authorization: apiKey}}), priority);
+        } catch (e) {
+            //network/CORS error - no status available
+            if (!fallback) throw e;
+            if (!keyFailed) console.warn("radaroverlay: request with api key failed, using anonymous access", e.message);
+            keyFailed = true;
+            return loadAnonymous(url, priority);
+        }
         if (!response.ok) throw new Error(`${url}: ${response.status}`);
         const objectUrl = URL.createObjectURL(await response.blob());
         try {
@@ -479,7 +502,11 @@ const createWmsSource = (defaultLayer) => ({
         context.apiKey = options.apikey || (options.usekey ? settings[options.usekey] : undefined);
         const base = new URL(options.url || options.href);
         //KNMI: the anonymous endpoint has a shared quota, with a key use the normal one
-        if (context.apiKey && options.keyhost) base.hostname = options.keyhost;
+        context.fallback = undefined;
+        if (context.apiKey && options.keyhost) {
+            context.fallback = {host: base.hostname, minInterval: parseInt(options.mininterval || 0)};
+            base.hostname = options.keyhost;
+        }
         for (let [k, v] of Object.entries({
             SERVICE: "WMS",
             VERSION: "1.1.1",
@@ -537,8 +564,10 @@ const createWmsSource = (defaultLayer) => ({
         }
         return rt;
     },
-    frameUrl: (urlString, frame) => {
+    frameUrl: (urlString, frame, context) => {
         const url = new URL(urlString);
+        //the host may change with the api key setting
+        url.hostname = context.base.hostname;
         if (frame.latest) {
             url.searchParams.set("_avnav", frame.bucket);
             return url.toString();
@@ -547,7 +576,7 @@ const createWmsSource = (defaultLayer) => ({
         if (frame.layer) url.searchParams.set("LAYERS", frame.layer);
         return url.toString();
     },
-    loader: (context) => createLoader(context.minInterval, context.apiKey)
+    loader: (context) => createLoader(context.minInterval, context.apiKey, context.fallback)
 });
 
 //------------------- settings dialog ------------------------------------
