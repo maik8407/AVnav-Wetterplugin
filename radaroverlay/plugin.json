@@ -1,5 +1,5 @@
 {
-  "version": "20261011h",
+  "version": "20261011i",
   "description": "Weather radar overlay (RainViewer worldwide, DWD Germany, KNMI Netherlands)",
   "charts": [
     {
@@ -47,7 +47,7 @@
           "name": "radar",
           "profile": "plugin_knmiradar",
           "url": "https://anonymous.api.dataplatform.knmi.nl/wms/adaguc-server?DATASET=radar_reflectivity_composites",
-          "wmslayer": "RAD_NL25_PCP_CM",
+          "wmslayer": "precipitation",
           "mininterval": 1100,
           "minzoom": 5,
           "maxzoom": 8,

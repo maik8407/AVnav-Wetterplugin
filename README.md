@@ -7,7 +7,7 @@ vorhandene Seekarte gelegt.
 | Karte | Quelle | Abdeckung | Aktualisierung | Auflösung |
 | --- | --- | --- | --- | --- |
 | `radar-rainviewer` | [RainViewer](https://www.rainviewer.com/api.html) | weltweit (wo es Radar gibt) | alle 10 min | grob (Daten bis Zoom 7, bis Zoom 15 vergrößert) |
-| `radar-knmi` | [KNMI](https://dataplatform.knmi.nl/dataset/radar-reflectivity-composites-2-0) (WMS, Layer `RAD_NL25_PCP_CM`, CC BY 4.0) | Niederlande, IJsselmeer, Waddenzee | alle 5 min | ca. 1 km |
+| `radar-knmi` | [KNMI](https://dataplatform.knmi.nl/dataset/radar-reflectivity-composites-2-0) (WMS, Layer `precipitation`, CC BY 4.0) | Niederlande, IJsselmeer, Waddenzee | alle 5 min | ca. 1 km |
 | `radar-dwd` | [Deutscher Wetterdienst](https://www.dwd.de/DE/leistungen/geodienste/geodienste.html) (WMS, Layer `dwd:Niederschlagsradar`) | Deutschland und Nachbarländer, Nord- und Ostsee küstennah | alle 5 min | ca. 1 km |
 
 Windy bietet Radardaten in seiner API nicht an (Radar ist dort kein erlaubtes

@@ -614,7 +614,7 @@ const showSettingsDialog = async (ev) => {
 const SOURCES = {
     rainviewer: rainViewerSource,
     dwdradar: createWmsSource("dwd:Niederschlagsradar"),
-    knmiradar: createWmsSource("RAD_NL25_PCP_CM")
+    knmiradar: createWmsSource("precipitation")
 };
 
 export default async (pluginApi) => {
