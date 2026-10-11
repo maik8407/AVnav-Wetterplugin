@@ -67,7 +67,8 @@ const SETTINGS_PARAMETERS = [
 ];
 
 let api; //the AvNav plugin api, set on load
-let settingsVersion = 0;
+//all radar layers currently shown (their contexts)
+const liveLayers = new Set();
 let activeLayers = 0; //the settings button is only visible with an active radar layer
 
 const setActive = (diff) => {
@@ -135,8 +136,8 @@ const createLoader = (minInterval, apiKey) => {
     const queue = createRequestQueue(minInterval);
     const cache = new Map();
     const loadImage = (src) => new Promise((resolve, reject) => {
+        //no crossOrigin: like AvNav itself, as not all servers send CORS headers (KNMI)
         const image = new Image();
-        image.crossOrigin = 'anonymous';
         image.addEventListener('load', () => resolve(image), {once: true});
         image.addEventListener('error', () => reject(new Error("unable to load " + src)), {once: true});
         image.src = src;
@@ -313,16 +314,25 @@ const computeFrames = async (options, context) => {
  * check for new radar data and reload the tiles if needed
  * this avoids reloading the complete map
  */
-const refreshLayer = async (options, context) => {
-    const {frames} = await computeFrames(options, context);
-    if (frameSignature(frames) === frameSignature(context.frames)) return;
+const refreshLayer = async (options, context, settingsChanged) => {
+    if (settingsChanged) await context.source.prepare(options, context, getSettings());
+    const {frames, animate} = await computeFrames(options, context);
+    const wasAnimated = animatedLayers.has(context);
+    if (!settingsChanged && frameSignature(frames) === frameSignature(context.frames)) return;
     context.frames = frames;
-    context.index = Math.min(context.index, frames.length - 1);
-    if (!animatedLayers.has(context)) context.index = frames.length - 1;
+    if (animate) {
+        animatedLayers.add(context);
+        context.index = wasAnimated ? Math.min(context.index, frames.length - 1) : 0;
+    } else {
+        animatedLayers.delete(context);
+        context.index = frames.length - 1;
+    }
+    if (animate !== wasAnimated) updateAnimationTimer();
     context.generation++;
     context.load = context.source.loader(context);
     showFrame(context); //removes released tiles
     for (let record of context.tiles.values()) {
+        record.images = [];
         loadTileFrames(context, record);
     }
 }
@@ -351,6 +361,8 @@ const createRadarLayer = (source) => async (options, context) => {
         animatedLayers.add(context);
         updateAnimationTimer();
     }
+    context.options = options;
+    liveLayers.add(context);
     context.refreshTimer = window.setInterval(() => refreshLayer(options, context), REFRESH_CHECK);
     setActive(1);
     return {
@@ -377,12 +389,13 @@ const createRadarLayer = (source) => async (options, context) => {
             window.clearInterval(ctx.refreshTimer);
             ctx.generation++;
             animatedLayers.delete(ctx);
+            liveLayers.delete(ctx);
             ctx.tiles.clear();
             setActive(-1);
             updateAnimationTimer();
-        },
-        //AvNav reloads the chart if this changes - only needed for new settings
-        sequenceFunction: async () => settingsVersion
+        }
+        //no sequenceFunction: new data and settings are applied to the
+        //existing tiles - a chart reload by AvNav would flicker
     };
 }
 
@@ -554,8 +567,10 @@ const showSettingsDialog = async (ev) => {
             {
                 name: 'DBOk', onClick: (event, values) => {
                     api.setLocalStorage(SETTINGS_KEY, {...getSettings(), ...values});
-                    //changes the sequence - AvNav will reload the radar charts
-                    settingsVersion++;
+                    //apply the new settings to all radar layers without reloading the map
+                    for (let context of liveLayers) {
+                        refreshLayer(context.options, context, true);
+                    }
                     updateAnimationTimer();
                 }
             }

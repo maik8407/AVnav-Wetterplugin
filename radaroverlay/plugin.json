@@ -1,5 +1,5 @@
 {
-  "version": "20261011f",
+  "version": "20261011g",
   "description": "Weather radar overlay (RainViewer worldwide, DWD Germany, KNMI Netherlands)",
   "charts": [
     {
