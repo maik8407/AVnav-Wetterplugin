@@ -65,6 +65,8 @@ Ohne Animation wird nur der aktuelle Wind angezeigt. Die Daten kommen von
 [Open-Meteo](https://open-meteo.com) (frei für private Nutzung, 15-Minuten-Werte) und werden
 alle 15 Minuten oder nach ca. 5 km Fahrt neu geladen. Abschaltbar im Radar-Dialog ("Wind anzeigen").
 
+Im Nachtmodus wird die Anzeige dunkel mit roter Schrift dargestellt, das Radar selbst wird wie die Seekarte abgedunkelt.
+
 Die Radarbilder werden im Hintergrund nachgeladen, ohne die Seekarte neu aufzubauen.
 
 ## Weitere Quellen

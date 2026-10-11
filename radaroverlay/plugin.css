@@ -20,3 +20,13 @@
 .radaroverlayFrameLabel.forecast {
     background-color: rgba(170, 70, 0, 0.75);
 }
+/* night mode: dark label with the red night text color of AvNav */
+.nightMode .radaroverlayFrameLabel {
+    color: var(--avnav-fore-color);
+    background-color: rgba(0, 0, 0, 0.75);
+    border: 1px solid var(--avnav-fore-color);
+}
+.nightMode .radaroverlayFrameLabel.forecast {
+    background-color: rgba(60, 0, 0, 0.75);
+    border-style: dashed;
+}
