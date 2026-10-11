@@ -46,22 +46,24 @@ const DEFAULT_SETTINGS = {
     animate: false,
     past: 30,       //minutes of history in the animation
     forecast: 30,   //minutes of forecast in the animation
-    interval: 1,    //seconds per animation step
+    interval: 2,    //seconds per animation step
     knmikey: ""     //optional KNMI Data Platform API key
 };
 const MINUTES = [0, 15, 30, 60, 90, 120];
+const SPEEDS = [0.5, 1, 1.5, 2, 3, 5];
 const SETTINGS_PARAMETERS = [
     {name: 'animate', type: 'BOOLEAN', displayName: 'Animation', default: DEFAULT_SETTINGS.animate,
-        description: 'Show the radar as animation instead of only the current image'},
-    {name: 'past', type: 'SELECT', displayName: 'History (min)', list: MINUTES, default: DEFAULT_SETTINGS.past,
+        description: 'Radar als Animation statt nur das aktuelle Bild zeigen'},
+    {name: 'past', type: 'SELECT', displayName: 'Vergangenheit (min)', list: MINUTES, default: DEFAULT_SETTINGS.past,
         condition: {animate: true}},
-    {name: 'forecast', type: 'SELECT', displayName: 'Forecast (min)', list: MINUTES, default: DEFAULT_SETTINGS.forecast,
+    {name: 'forecast', type: 'SELECT', displayName: 'Vorhersage (min)', list: MINUTES, default: DEFAULT_SETTINGS.forecast,
         condition: {animate: true},
-        description: 'Only DWD provides a forecast (up to 120 min). RainViewer and KNMI only show the history.'},
-    {name: 'interval', type: 'FLOAT', displayName: 'Seconds per step', default: DEFAULT_SETTINGS.interval,
-        condition: {animate: true}},
-    {name: 'knmikey', type: 'STRING', displayName: 'KNMI API key', default: DEFAULT_SETTINGS.knmikey,
-        description: 'Optional key from developer.dataplatform.knmi.nl - makes radar-knmi faster and more reliable'}
+        description: 'Nur der DWD liefert eine Vorhersage (bis 120 min). RainViewer und KNMI zeigen nur die Vergangenheit.'},
+    {name: 'interval', type: 'SELECT', displayName: 'Sekunden pro Bild', list: SPEEDS, default: DEFAULT_SETTINGS.interval,
+        condition: {animate: true},
+        description: 'Tempo der Animation: je größer, desto langsamer'},
+    {name: 'knmikey', type: 'STRING', displayName: 'KNMI API-Key', default: DEFAULT_SETTINGS.knmikey,
+        description: 'Optionaler Key von developer.dataplatform.knmi.nl - macht radar-knmi schneller und zuverlässiger'}
 ];
 
 let api; //the AvNav plugin api, set on load
@@ -213,8 +215,10 @@ const showFrameLabel = (label, forecast) => {
         if (!label) return;
         frameLabel = document.createElement('div');
         frameLabel.className = 'radaroverlayFrameLabel';
-        document.body.appendChild(frameLabel);
     }
+    //place it on the map (not above the widgets), the map element can change
+    const map = document.querySelector('.mapPage .mapFrame');
+    if (map && frameLabel.parentElement !== map) map.appendChild(frameLabel);
     frameLabel.textContent = label;
     frameLabel.classList.toggle('forecast', !!forecast);
     frameLabel.style.display = label ? '' : 'none';

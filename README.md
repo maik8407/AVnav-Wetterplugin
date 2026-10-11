@@ -48,8 +48,8 @@ Internetverbindung bleibt das Overlay einfach leer.
 
 Sobald ein Radar-Overlay aktiv ist, erscheint auf der Navigationsseite der Button "Radar".
 Im Dialog kann man die Animation einschalten und einstellen, wie viele Minuten
-Vergangenheit und Vorhersage gezeigt werden und wie schnell sie läuft. Während der
-Animation steht oben auf der Karte, welcher Zeitpunkt gerade zu sehen ist
+Vergangenheit und Vorhersage gezeigt werden und wie schnell sie läuft (Sekunden pro Bild, Standard 2). Während der
+Animation steht oben mittig auf der Seekarte (unter den Anzeigen, neben dem Kompass), welcher Zeitpunkt gerade zu sehen ist
 (z.B. `−30 min 15:40`, `jetzt 16:10`, `+30 min 16:40 Vorhersage` – Vorhersagen orange).
 
 * DWD: Vergangenheit aus `dwd:Niederschlagsradar`, Vorhersage (bis 120 min) aus `dwd:Radar_wn-product_1x1km_ger`.

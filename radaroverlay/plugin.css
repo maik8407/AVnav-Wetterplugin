@@ -1,19 +1,20 @@
-/* time of the radar image shown during the animation */
+/* time of the radar image shown during the animation:
+   top center of the map - the compass is top left */
 .radaroverlayFrameLabel {
-    position: fixed;
-    top: 0.5em;
+    position: absolute;
+    top: 0.4em;
     left: 50%;
     transform: translateX(-50%);
-    z-index: 50;
+    z-index: 10;
     pointer-events: none;
-    padding: 0.2em 0.7em;
+    padding: 0.1em 0.5em;
     border-radius: 0.4em;
-    font-size: 1.3em;
+    font-size: 1em;
     font-weight: bold;
     color: white;
-    background-color: rgba(30, 60, 120, 0.75);
+    background-color: rgba(30, 60, 120, 0.7);
     white-space: nowrap;
 }
 .radaroverlayFrameLabel.forecast {
-    background-color: rgba(170, 70, 0, 0.8);
+    background-color: rgba(170, 70, 0, 0.75);
 }
