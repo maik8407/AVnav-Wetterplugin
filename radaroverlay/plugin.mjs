@@ -47,7 +47,8 @@ const DEFAULT_SETTINGS = {
     past: 30,       //minutes of history in the animation
     forecast: 30,   //minutes of forecast in the animation
     interval: 2,    //seconds per animation step
-    knmikey: ""     //optional KNMI Data Platform API key
+    knmikey: "",    //optional KNMI Data Platform API key
+    wind: true      //show the wind forecast at the boat position in the label
 };
 const MINUTES = [0, 15, 30, 60, 90, 120];
 const SPEEDS = [0.5, 1, 1.5, 2, 3, 5];
@@ -58,10 +59,12 @@ const SETTINGS_PARAMETERS = [
         condition: {animate: true}},
     {name: 'forecast', type: 'SELECT', displayName: 'Vorhersage (min)', list: MINUTES, default: DEFAULT_SETTINGS.forecast,
         condition: {animate: true},
-        description: 'Nur der DWD liefert eine Vorhersage (bis 120 min). RainViewer und KNMI zeigen nur die Vergangenheit.'},
+        description: 'DWD und KNMI liefern eine Vorhersage (bis 120 min). RainViewer zeigt nur die Vergangenheit.'},
     {name: 'interval', type: 'SELECT', displayName: 'Sekunden pro Bild', list: SPEEDS, default: DEFAULT_SETTINGS.interval,
         condition: {animate: true},
         description: 'Tempo der Animation: je größer, desto langsamer'},
+    {name: 'wind', type: 'BOOLEAN', displayName: 'Wind anzeigen', default: DEFAULT_SETTINGS.wind,
+        description: 'Wind und Böen am Bootsort (ohne GPS: Kartenmitte) zur angezeigten Zeit, Daten von open-meteo.com'},
     {name: 'knmikey', type: 'STRING', displayName: 'KNMI API-Key', default: DEFAULT_SETTINGS.knmikey,
         description: 'Optionaler Key von developer.dataplatform.knmi.nl - macht radar-knmi schneller und zuverlässiger'}
 ];
@@ -227,8 +230,117 @@ const formatFrame = (context) => {
         if (!f.forecast) now = f;
     });
     const diff = now ? Math.round((frame.time - now.time) / 60000) : 0;
-    if (diff === 0) return `jetzt ${hm}`;
-    return diff < 0 ? `\u2212${-diff} min ${hm}` : `+${diff} min ${hm} Vorhersage`;
+    let label;
+    if (diff === 0) label = `jetzt ${hm}`;
+    else label = diff < 0 ? `\u2212${-diff} min ${hm}` : `+${diff} min ${hm} Vorhersage`;
+    return withWind(label, frame.time);
+}
+
+//------------------- wind forecast at the boat position ----------------
+/*
+ * Open-Meteo (free for non-commercial use, no key, CORS enabled)
+ * 15 minute values, interpolated from hourly data where no 15 minute model exists
+ */
+const WIND_URL = 'https://api.open-meteo.com/v1/forecast';
+const WIND_REFRESH = 15 * 60000; //reload after this time (ms)
+const WIND_RETRY = 2 * 60000;    //wait after an error (ms)
+const WIND_MOVE = 0.05;          //reload if the position changed by more (degrees, ~5km)
+const WIND_DIRECTIONS = ['N', 'NO', 'O', 'SO', 'S', 'SW', 'W', 'NW'];
+let wind;            //{lat,lon,fetched,times,speed,gust,dir}
+let windLoading = false;
+let windLastTry = 0;
+
+const getPosition = () => {
+    if (!api) return;
+    const valid = (lat, lon) => typeof lat === 'number' && typeof lon === 'number' &&
+        isFinite(lat) && isFinite(lon);
+    if (api.getStoreData('nav.gps.valid')) {
+        const lat = api.getStoreData('nav.gps.lat');
+        const lon = api.getStoreData('nav.gps.lon');
+        if (valid(lat, lon)) return {lat, lon};
+    }
+    const center = api.getStoreData('map.centerPosition');
+    if (center && valid(center.lat, center.lon)) return {lat: center.lat, lon: center.lon};
+}
+
+const updateWind = () => {
+    const settings = getSettings();
+    if (!settings.wind || windLoading) return;
+    const pos = getPosition();
+    if (!pos) return;
+    const now = Date.now();
+    if (wind && now - wind.fetched < WIND_REFRESH &&
+        Math.abs(wind.lat - pos.lat) < WIND_MOVE && Math.abs(wind.lon - pos.lon) < WIND_MOVE) return;
+    if (now - windLastTry < WIND_RETRY) return;
+    windLastTry = now;
+    windLoading = true;
+    const url = new URL(WIND_URL);
+    for (let [k, v] of Object.entries({
+        latitude: pos.lat.toFixed(3),
+        longitude: pos.lon.toFixed(3),
+        minutely_15: 'wind_speed_10m,wind_gusts_10m,wind_direction_10m',
+        wind_speed_unit: 'kn',
+        timeformat: 'unixtime',
+        past_minutely_15: 9,      //2 hours back
+        forecast_minutely_15: 10  //2.5 hours ahead
+    })) {
+        url.searchParams.set(k, String(v));
+    }
+    fetch(url)
+        .then((response) => {
+            if (!response.ok) throw new Error("wind: " + response.status);
+            return response.json();
+        })
+        .then((data) => {
+            const values = data.minutely_15;
+            if (!values || !values.time) throw new Error("wind: no data");
+            wind = {
+                lat: pos.lat, lon: pos.lon, fetched: Date.now(),
+                times: values.time.map((t) => t * 1000),
+                speed: values.wind_speed_10m || [],
+                gust: values.wind_gusts_10m || [],
+                dir: values.wind_direction_10m || []
+            };
+        })
+        .catch((e) => console.warn("radaroverlay: unable to load wind", e.message))
+        .finally(() => {
+            windLoading = false;
+        });
+}
+
+//wind at a time (ms), linear interpolation between the 15 minute values
+const windAt = (time) => {
+    if (!wind) return;
+    const times = wind.times;
+    for (let i = 0; i < times.length - 1; i++) {
+        if (time < times[i] || time > times[i + 1]) continue;
+        const f = (time - times[i]) / (times[i + 1] - times[i]);
+        const interpolate = (values) => {
+            const a = values[i], b = values[i + 1];
+            if (typeof a !== 'number' || typeof b !== 'number') return typeof a === 'number' ? a : b;
+            return a + (b - a) * f;
+        };
+        const dir = f < 0.5 ? wind.dir[i] : wind.dir[i + 1];
+        return {speed: interpolate(wind.speed), gust: interpolate(wind.gust), dir};
+    }
+}
+
+const formatWind = (time) => {
+    if (!getSettings().wind) return "";
+    updateWind();
+    const w = windAt(time);
+    if (!w || typeof w.speed !== 'number') return "";
+    let rt = "";
+    if (typeof w.dir === 'number') rt += WIND_DIRECTIONS[Math.round(w.dir / 45) % 8] + " ";
+    rt += Math.round(w.speed) + " kn";
+    if (typeof w.gust === 'number') rt += ", B\u00f6en " + Math.round(w.gust);
+    return rt;
+}
+
+const withWind = (label, time) => {
+    const w = formatWind(time);
+    if (!w) return label;
+    return label ? label + "\n" + w : w;
 }
 
 //a label on top of the map showing the time of the current animation step
@@ -306,7 +418,10 @@ const updateAnimationTimer = () => {
         animationTimer = undefined;
     }
     if (animatedLayers.size < 1) {
-        showFrameLabel("");
+        //without animation only the current wind (if enabled)
+        const staticLabel = () => showFrameLabel(liveLayers.size > 0 ? withWind("", Date.now()) : "");
+        staticLabel();
+        if (liveLayers.size > 0 && getSettings().wind) animationTimer = window.setInterval(staticLabel, 10000);
         return;
     }
     animationTimer = window.setInterval(animationStep, getSettings().interval * 1000);
@@ -380,12 +495,10 @@ const createRadarLayer = (source) => async (options, context) => {
     context.frames = frames;
     context.index = animate ? 0 : frames.length - 1;
     context.load = source.loader(context);
-    if (animate) {
-        animatedLayers.add(context);
-        updateAnimationTimer();
-    }
+    if (animate) animatedLayers.add(context);
     context.options = options;
     liveLayers.add(context);
+    updateAnimationTimer();
     context.refreshTimer = window.setInterval(() => refreshLayer(options, context), REFRESH_CHECK);
     setActive(1);
     return {

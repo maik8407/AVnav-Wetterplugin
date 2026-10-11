@@ -57,6 +57,14 @@ Animation steht oben mittig auf der Seekarte (unter den Anzeigen, neben dem Komp
 * KNMI: Vergangenheit aus `precipitation`, Vorhersage (bis 120 min) aus dem Dataset `radar_forecast`, Layer `precipitationfc`.
 * RainViewer: nur Vergangenheit.
 
+### Wind
+
+Unter der Zeit steht der vorhergesagte Wind mit Böen (in Knoten) am Bootsort für den gerade
+gezeigten Zeitpunkt, z.B. `SW 14 kn, Böen 22`. Ohne GPS-Fix wird die Kartenmitte genommen.
+Ohne Animation wird nur der aktuelle Wind angezeigt. Die Daten kommen von
+[Open-Meteo](https://open-meteo.com) (frei für private Nutzung, 15-Minuten-Werte) und werden
+alle 15 Minuten oder nach ca. 5 km Fahrt neu geladen. Abschaltbar im Radar-Dialog ("Wind anzeigen").
+
 Die Radarbilder werden im Hintergrund nachgeladen, ohne die Seekarte neu aufzubauen.
 
 ## Weitere Quellen
