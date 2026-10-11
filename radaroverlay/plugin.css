@@ -1,0 +1,19 @@
+/* time of the radar image shown during the animation */
+.radaroverlayFrameLabel {
+    position: fixed;
+    top: 0.5em;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 50;
+    pointer-events: none;
+    padding: 0.2em 0.7em;
+    border-radius: 0.4em;
+    font-size: 1.3em;
+    font-weight: bold;
+    color: white;
+    background-color: rgba(30, 60, 120, 0.75);
+    white-space: nowrap;
+}
+.radaroverlayFrameLabel.forecast {
+    background-color: rgba(170, 70, 0, 0.8);
+}

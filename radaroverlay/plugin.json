@@ -1,0 +1,67 @@
+{
+  "version": "20261011e",
+  "description": "Weather radar overlay (RainViewer worldwide, DWD Germany, KNMI Netherlands)",
+  "charts": [
+    {
+      "name": "radar-rainviewer",
+      "icon": "radar.svg",
+      "upzoom": 8,
+      "layers": [
+        {
+          "name": "radar",
+          "profile": "plugin_rainviewer",
+          "url": "https://tilecache.rainviewer.com/{z}/{x}/{y}",
+          "minzoom": 1,
+          "maxzoom": 7
+        }
+      ]
+    },
+    {
+      "name": "radar-dwd",
+      "icon": "radar.svg",
+      "upzoom": 8,
+      "layers": [
+        {
+          "name": "radar",
+          "profile": "plugin_dwdradar",
+          "url": "https://maps.dwd.de/geoserver/dwd/wms",
+          "wmslayer": "dwd:Niederschlagsradar",
+          "minzoom": 4,
+          "maxzoom": 11,
+          "boundingbox": {
+            "minlon": 1,
+            "minlat": 45,
+            "maxlon": 19,
+            "maxlat": 57
+          },
+          "forecastlayer": "dwd:Radar_wn-product_1x1km_ger"
+        }
+      ]
+    },
+    {
+      "name": "radar-knmi",
+      "icon": "radar.svg",
+      "upzoom": 8,
+      "layers": [
+        {
+          "name": "radar",
+          "profile": "plugin_knmiradar",
+          "url": "https://anonymous.api.dataplatform.knmi.nl/wms/adaguc-server?DATASET=radar_reflectivity_composites",
+          "wmslayer": "RAD_NL25_PCP_CM",
+          "mininterval": 1100,
+          "minzoom": 5,
+          "maxzoom": 8,
+          "boundingbox": {
+            "minlon": 0,
+            "minlat": 48.9,
+            "maxlon": 10.9,
+            "maxlat": 56
+          },
+          "keyhost": "api.dataplatform.knmi.nl",
+          "keyinterval": 100,
+          "usekey": "knmikey"
+        }
+      ]
+    }
+  ]
+}
